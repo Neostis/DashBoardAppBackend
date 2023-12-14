@@ -11,7 +11,7 @@ app.use("/files", express.static("files"));
 const fs = require("fs");
 const path = require("path");
 const { ObjectId } = require("mongodb");
-
+var db;
 // MongoDB connection
 const mongoUrl =
   "mongodb+srv://admin:admin@cluster0.5wtjno2.mongodb.net/a?retryWrites=true&w=majority";
@@ -26,6 +26,10 @@ mongoose
   })
   .catch((e) => console.log(e));
 
+//Check if connection establish
+mongoose.connection.once("open", () => {
+  db = mongoose.connection.db;
+});
 // Multer
 const multer = require("multer");
 
@@ -39,11 +43,10 @@ app.post("/upload-files", upload.single("file"), async (req, res) => {
   const lastModified = Date.now();
 
   try {
-    const db = mongoose.connection.db; // Access the native MongoDB driver's database object
     const bucket = new mongoose.mongo.GridFSBucket(db);
 
     // Create a readable stream from the file buffer
-    const readableStream = require('stream').Readable.from([req.file.buffer]);
+    const readableStream = require("stream").Readable.from([req.file.buffer]);
 
     // Upload the file to GridFS
     const uploadStream = bucket.openUploadStream(title, {
@@ -57,7 +60,7 @@ app.post("/upload-files", upload.single("file"), async (req, res) => {
 
     readableStream.pipe(uploadStream);
 
-    uploadStream.on('finish', async () => {
+    uploadStream.on("finish", async () => {
       // Remove the file from the local filesystem
       // (assuming that you don't need it after uploading to GridFS)
       res.send({ status: "ok" });
@@ -71,8 +74,7 @@ app.post("/upload-files", upload.single("file"), async (req, res) => {
 /* The code you provided is a route handler for retrieving a list of files from the server. It listens
 for GET requests to the '/get-files' endpoint. */
 app.get("/get-files", async (req, res) => {
-  const db = mongoose.connection.db; // Access the native MongoDB driver's database object
-  const filesCollection = db.collection('fs.files');
+  const filesCollection = db.collection("fs.files");
 
   try {
     // Retrieve all files from fs.files
@@ -82,18 +84,17 @@ app.get("/get-files", async (req, res) => {
     res.json(allFiles);
   } catch (error) {
     console.error(error);
-    res.status(500).send('Internal Server Error');
+    res.status(500).send("Internal Server Error");
   }
 });
 
 /* The code you provided is a route handler for retrieving a file from the server. It listens for GET
 requests to the '/get-file/:fileId' endpoint, where ':fileId' is a parameter representing the ID of
 the file to be retrieved. */
-app.get('/get-file/:fileId', async (req, res) => {
+app.get("/get-file/:fileId", async (req, res) => {
   try {
     const fileId = req.params.fileId;
 
-    const db = mongoose.connection.db; // Access the native MongoDB driver's database object
     const bucket = new mongoose.mongo.GridFSBucket(db);
 
     const fileMetadata = await bucket.find({ _id: ObjectId(fileId) }).toArray();
@@ -105,33 +106,32 @@ app.get('/get-file/:fileId', async (req, res) => {
     bucket.openDownloadStream(ObjectId(fileId)).pipe(res);
   } catch (error) {
     console.error(error);
-    res.status(500).send('Internal Server Error');
+    res.status(500).send("Internal Server Error");
   }
 });
 
 /* The code you provided is a route handler for deleting a file from the server. It listens for DELETE
 requests to the '/delete-file/:fileId' endpoint, where ':fileId' is a parameter representing the ID
 of the file to be deleted. */
-app.delete('/delete-file/:fileId', async (req, res) => {
+app.delete("/delete-file/:fileId", async (req, res) => {
   try {
     const fileId = req.params.fileId;
 
-    const db = mongoose.connection.db; // Access the native MongoDB driver's database object
     const bucket = new mongoose.mongo.GridFSBucket(db);
 
     const fileMetadata = await bucket.find({ _id: ObjectId(fileId) }).toArray();
 
     if (fileMetadata.length === 0) {
-      return res.status(404).json({ error: 'File does not exist.' });
+      return res.status(404).json({ error: "File does not exist." });
     }
 
     // Remove the file from GridFS
     await bucket.delete(ObjectId(fileId));
 
-    res.json({ message: 'File deleted successfully' });
+    res.json({ message: "File deleted successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
@@ -141,4 +141,18 @@ app.get("/", async (req, res) => {
 
 app.listen(5000, () => {
   console.log("Server Started");
+});
+
+app.get("/getAllMember", (req, res) => {
+  const membersCollection = db.collection("Members");
+
+  membersCollection.find({}).toArray((err, members) => {
+    if (err) {
+      console.error("Error occurred while fetching files:", err);
+      res.status(500).json({ error: "Internal server error" });
+      return;
+    }
+
+    res.json(members); // Send the retrieved files as JSON response
+  });
 });
