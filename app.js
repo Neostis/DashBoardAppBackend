@@ -11,6 +11,7 @@ app.use("/files", express.static("files"));
 const fs = require("fs");
 const path = require("path");
 const { ObjectId } = require("mongodb");
+const Member = require("./memberModel");
 var db;
 // MongoDB connection
 const mongoUrl =
@@ -32,6 +33,7 @@ mongoose.connection.once("open", () => {
 });
 // Multer
 const multer = require("multer");
+const memberModel = require("./memberModel");
 
 const storage = multer.memoryStorage(); // Use memory storage for multer
 
@@ -143,16 +145,42 @@ app.listen(5000, () => {
   console.log("Server Started");
 });
 
-app.get("/getAllMember", (req, res) => {
-  const membersCollection = db.collection("Members");
+app.get("/members/search", async (req, res) => {
+  // const membersCollection = db.collection("Members");
 
-  membersCollection.find({}).toArray((err, members) => {
-    if (err) {
-      console.error("Error occurred while fetching files:", err);
-      res.status(500).json({ error: "Internal server error" });
-      return;
-    }
+  try {
+    const searchTerm = req.query.name;
+    //insensitive
+    const regex = new RegExp(searchTerm, "i");
+    const members = await Member.find({
+      $or: [
+        {
+          name: regex,
+        },
+        {
+          role: regex,
+        },
+        {
+          email: regex,
+        },
+        {
+          type: regex,
+        },
+      ],
+    });
 
-    res.json(members); // Send the retrieved files as JSON response
-  });
+    res.json(members);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+
+  // membersCollection.find({}).toArray((err, members) => {
+  //   if (err) {
+  //     console.error("Error occurred while fetching files:", err);
+  //     res.status(500).json({ error: "Internal server error" });
+  //     return;
+  //   }
+
+  //   res.json(members); // Send the retrieved files as JSON response
+  // });
 });
