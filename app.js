@@ -33,39 +33,10 @@ const storage = multer.memoryStorage(); // Use memory storage for multer
 
 const upload = multer({ storage: storage });
 
-app.post("/upload-files", upload.single("file"), async (req, res) => {
-  const title = req.file.originalname;
-  const type = path.extname(title).substr(1);
-  const lastModified = Date.now();
+const db = mongoose.connection.db; // Access the native MongoDB driver's database object
 
-  try {
-    const db = mongoose.connection.db; // Access the native MongoDB driver's database object
-    const bucket = new mongoose.mongo.GridFSBucket(db);
-
-    // Create a readable stream from the file buffer
-    const readableStream = require('stream').Readable.from([req.file.buffer]);
-
-    // Upload the file to GridFS
-    const uploadStream = bucket.openUploadStream(title, {
-      contentType: req.file.mimetype,
-      metadata: {
-        title: title,
-        type: type,
-        lastModified: lastModified,
-      },
-    });
-
-    readableStream.pipe(uploadStream);
-
-    uploadStream.on('finish', async () => {
-      // Remove the file from the local filesystem
-      // (assuming that you don't need it after uploading to GridFS)
-      res.send({ status: "ok" });
-    });
-  } catch (error) {
-    console.error(error);
-    res.json({ status: error });
-  }
+app.get("/", async (req, res) => {
+  res.send("Success!!!!!!");
 });
 
 /* The code you provided is a route handler for retrieving a list of files from the server. It listens
@@ -109,6 +80,64 @@ app.get('/get-file/:fileId', async (req, res) => {
   }
 });
 
+/* The code you provided is a route handler for retrieving a list of files from the server. It listens
+for GET requests to the '/get-files' endpoint. */
+app.get("/get-projects", async (req, res) => {
+  const db = mongoose.connection.db; // Access the native MongoDB driver's database object
+  const projectsCollection = db.collection('Projects');
+
+  try {
+    // Retrieve all files from fs.files
+    const allProject = await projectsCollection.find().toArray();
+
+    // Send the list of files as a response
+    res.json(allProject);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+/* The code you provided is a route handler for uploading a file to the server. It listens for POST
+requests to the '/upload-files/:projectID' endpoint, where ':projectID' is a parameter representing
+the ID of the project the file belongs to. */
+app.post("/upload-files/:projectID", upload.single("file"), async (req, res) => {
+  const title = req.file.originalname;
+  const type = path.extname(title).substr(1);
+  const lastModified = Date.now();
+  const projectID = req.params.projectID;
+
+  try {
+    const db = mongoose.connection.db; // Access the native MongoDB driver's database object
+    const bucket = new mongoose.mongo.GridFSBucket(db);
+
+    // Create a readable stream from the file buffer
+    const readableStream = require('stream').Readable.from([req.file.buffer]);
+
+    // Upload the file to GridFS
+    const uploadStream = bucket.openUploadStream(title, {
+      contentType: req.file.mimetype,
+      metadata: {
+        title: title,
+        type: type,
+        lastModified: lastModified,
+        projectID: projectID, // Add projectID to the metadata
+      },
+    });
+
+    readableStream.pipe(uploadStream);
+
+    uploadStream.on('finish', async () => {
+      // Remove the file from the local filesystem
+      // (assuming that you don't need it after uploading to GridFS)
+      res.send({ status: "ok" });
+    });
+  } catch (error) {
+    console.error(error);
+    res.json({ status: error });
+  }
+});
+
 /* The code you provided is a route handler for deleting a file from the server. It listens for DELETE
 requests to the '/delete-file/:fileId' endpoint, where ':fileId' is a parameter representing the ID
 of the file to be deleted. */
@@ -135,9 +164,6 @@ app.delete('/delete-file/:fileId', async (req, res) => {
   }
 });
 
-app.get("/", async (req, res) => {
-  res.send("Success!!!!!!");
-});
 
 app.listen(5000, () => {
   console.log("Server Started");
