@@ -107,8 +107,8 @@ app.post("/upload-files/:projectID", upload.single("file"), async (req, res) => 
   const title = req.file.originalname;
   const type = path.extname(title).substr(1);
   const lastModified = Date.now();
-  const projectID = req.params.projectID;
-
+  const projectID = mongoose.Types.ObjectId( req.params.projectID);
+  
   try {
     const db = mongoose.connection.db; // Access the native MongoDB driver's database object
     const bucket = new mongoose.mongo.GridFSBucket(db);
