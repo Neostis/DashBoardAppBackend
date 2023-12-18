@@ -88,7 +88,7 @@ app.get("/get-file/:fileId", async (req, res) => {
 for GET requests to the '/get-files' endpoint. */
 app.get("/get-projects", async (req, res) => {
   const db = mongoose.connection.db; // Access the native MongoDB driver's database object
-  const projectsCollection = db.collection('Projects');
+  const projectsCollection = db.collection("Projects");
 
   try {
     // Retrieve all files from fs.files
@@ -98,49 +98,53 @@ app.get("/get-projects", async (req, res) => {
     res.json(allProject);
   } catch (error) {
     console.error(error);
-    res.status(500).send('Internal Server Error');
+    res.status(500).send("Internal Server Error");
   }
 });
 
 /* The code you provided is a route handler for uploading a file to the server. It listens for POST
 requests to the '/upload-files/:projectID' endpoint, where ':projectID' is a parameter representing
 the ID of the project the file belongs to. */
-app.post("/upload-files/:projectID", upload.single("file"), async (req, res) => {
-  const title = req.file.originalname;
-  const type = path.extname(title).substr(1);
-  const lastModified = Date.now();
-  const projectID = mongoose.Types.ObjectId( req.params.projectID);
-  
-  try {
-    const db = mongoose.connection.db; // Access the native MongoDB driver's database object
-    const bucket = new mongoose.mongo.GridFSBucket(db);
+app.post(
+  "/upload-files/:projectID",
+  upload.single("file"),
+  async (req, res) => {
+    const title = req.file.originalname;
+    const type = path.extname(title).substr(1);
+    const lastModified = Date.now();
+    const projectID = mongoose.Types.ObjectId(req.params.projectID);
 
-    // Create a readable stream from the file buffer
-    const readableStream = require('stream').Readable.from([req.file.buffer]);
+    try {
+      const db = mongoose.connection.db; // Access the native MongoDB driver's database object
+      const bucket = new mongoose.mongo.GridFSBucket(db);
 
-    // Upload the file to GridFS
-    const uploadStream = bucket.openUploadStream(title, {
-      contentType: req.file.mimetype,
-      metadata: {
-        title: title,
-        type: type,
-        lastModified: lastModified,
-        projectID: projectID, // Add projectID to the metadata
-      },
-    });
+      // Create a readable stream from the file buffer
+      const readableStream = require("stream").Readable.from([req.file.buffer]);
 
-    readableStream.pipe(uploadStream);
+      // Upload the file to GridFS
+      const uploadStream = bucket.openUploadStream(title, {
+        contentType: req.file.mimetype,
+        metadata: {
+          title: title,
+          type: type,
+          lastModified: lastModified,
+          projectID: projectID, // Add projectID to the metadata
+        },
+      });
 
-    uploadStream.on('finish', async () => {
-      // Remove the file from the local filesystem
-      // (assuming that you don't need it after uploading to GridFS)
-      res.send({ status: "ok" });
-    });
-  } catch (error) {
-    console.error(error);
-    res.json({ status: error });
+      readableStream.pipe(uploadStream);
+
+      uploadStream.on("finish", async () => {
+        // Remove the file from the local filesystem
+        // (assuming that you don't need it after uploading to GridFS)
+        res.send({ status: "ok" });
+      });
+    } catch (error) {
+      console.error(error);
+      res.json({ status: error });
+    }
   }
-});
+);
 
 /* The code you provided is a route handler for deleting a file from the server. It listens for DELETE
 requests to the '/delete-file/:fileId' endpoint, where ':fileId' is a parameter representing the ID
@@ -167,7 +171,6 @@ app.delete("/delete-file/:fileId", async (req, res) => {
   }
 });
 
-
 app.listen(5000, () => {
   console.log("Server Started");
 });
@@ -180,18 +183,12 @@ app.get("/members/search", async (req, res) => {
     //insensitive
     const regex = new RegExp(searchTerm, "i");
     const members = await Member.find({
-      $or: [
+      $and: [
         {
-          name: regex,
+          $or: [{ name: regex }, { role: regex }, { email: regex }],
         },
         {
-          role: regex,
-        },
-        {
-          email: regex,
-        },
-        {
-          type: regex,
+          $nor: [{ "projects.projectId": "657aa5e1770d840a02e05056" }],
         },
       ],
     });
@@ -232,7 +229,9 @@ app.post("/add-member", async (req, res) => {
     await newMember.save();
 
     // Send a success response
-    res.status(201).json({ message: "Member added successfully", member: newMember });
+    res
+      .status(201)
+      .json({ message: "Member added successfully", member: newMember });
   } catch (error) {
     // Handle any errors
     console.error(error);
