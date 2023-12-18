@@ -183,9 +183,9 @@ app.get("/members/search", async (req, res) => {
     //insensitive
     const regex = new RegExp(searchTerm, "i");
     const members = await Member.find({
-      $or: [
+      $and: [
         {
-          name: regex,
+          $or: [{ name: regex }, { role: regex }, { email: regex }],
         },
         {
           role: regex,
@@ -248,12 +248,10 @@ app.post("/add-member", async (req, res) => {
       });
 
       await existingMember.save();
-      res
-        .status(200)
-        .json({
-          message: "Project added successfully",
-          member: existingMember,
-        });
+      res.status(200).json({
+        message: "Project added successfully",
+        member: existingMember,
+      });
     } else {
       // If a member with the given email does not exist, create a new member
       const newMember = new Member({
@@ -278,14 +276,44 @@ app.post("/add-member", async (req, res) => {
   }
 });
 
-app.get("/get-members", async (req, res) => {
-  // const membersCollection = db.collection("Members");
+app.get("/get-members/:role", async (req, res) => {
+
+  const roleFilter = req.params.role.replace(/[^a-zA-Z0-9]/g, '');
 
   try {
-    const members = await Member.find();
-
-    res.json(members);
+     let query = {};
+ 
+     if (roleFilter) {
+       query = { role: roleFilter };
+     }
+ 
+     const members = await Member.find(query);
+ 
+     res.json(members);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+     res.status(500).json({ message: error.message });
+  }
+ });
+
+ app.put('/update-member/:id', async (req, res) => {
+  try {
+    const memberId = req.params.id;
+    const { role } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(memberId)) {
+      return res.status(400).json({ message: 'Invalid member ID' });
+    }
+
+    const result = await Member.updateOne({ _id: memberId }, { $set: { role: role } });
+
+    if (result.ok === 1) {
+      // If `ok` is 1, it means the update was successful
+      res.status(200).json({ message: 'Member role updated successfully' });
+    } else {
+      // If `ok` is not 1, it means the update failed (member not found, etc.)
+      res.status(404).json({ message: 'Member not found or update failed' });
+    }
+  } catch (error) {
+    // res.status(500).json({ message: 'Internal Server Error' });
   }
 });

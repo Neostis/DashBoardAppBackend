@@ -14,5 +14,5 @@ const memberSchema = new mongoose.Schema({
   ],
 });
 
-const Member = mongoose.model("Members", memberSchema); // Specify 'TestMembers' as the collection name
+const Member = mongoose.model("Members", memberSchema, "Members"); // Specify 'TestMembers' as the collection name
 module.exports = Member;
