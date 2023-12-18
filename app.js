@@ -214,6 +214,7 @@ app.get("/members/search", async (req, res) => {
   // });
 });
 
+// Your endpoint to add a member
 app.post("/add-member", async (req, res) => {
   try {
     // Extract member details from the request body
@@ -294,6 +295,7 @@ app.get("/get-members/:role", async (req, res) => {
  });
 
  app.put('/update-member/:id', async (req, res) => {
+  console.log('/update-member/:id');
   try {
     const memberId = req.params.id;
     const { role } = req.body;
@@ -306,12 +308,13 @@ app.get("/get-members/:role", async (req, res) => {
 
     if (result.ok === 1) {
       // If `ok` is 1, it means the update was successful
-      res.status(200).json({ message: 'Member role updated successfully' });
+      // res.status(200).json({ message: 'Member role updated successfully' });
     } else {
       // If `ok` is not 1, it means the update failed (member not found, etc.)
-      res.status(404).json({ message: 'Member not found or update failed' });
+      // res.status(404).json({ message: 'Member not found or update failed' });
     }
   } catch (error) {
+    // console.error(error);
     // res.status(500).json({ message: 'Internal Server Error' });
   }
 });
