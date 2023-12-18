@@ -182,9 +182,9 @@ app.get("/members/search", async (req, res) => {
     //insensitive
     const regex = new RegExp(searchTerm, "i");
     const members = await Member.find({
-      $and: [
+      $or: [
         {
-          $or: [{ name: regex }, { role: regex }, { email: regex }],
+          name: regex,
         },
         {
           role: regex,
