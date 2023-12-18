@@ -218,11 +218,15 @@ app.post("/add-member", async (req, res) => {
 
     // Create a new member instance
     const newMember = new Member({
-      projectID: objectIdProjectID,
       name: name,
       role: role,
       email: email,
-      type: type,
+      projects: [
+        {
+          projectId: projectID,
+          type: type,
+        },
+      ],
     });
 
     // Save the new member to the database
