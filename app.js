@@ -218,57 +218,66 @@ app.get("/members/search", async (req, res) => {
 // Your endpoint to add a member
 app.post("/add-member", async (req, res) => {
   try {
-       // Extract member details from the request body
-       const { name, role, email, projects } = req.body;
-  
-       // Create an array to store the updated projects
-       const updatedProjects = [];
-  
-       // Loop through the provided projects and update the projectID
-       projects.forEach(project => {
-         updatedProjects.push({
-           projectID: new ObjectId(project.projectID),
-           type: project.type,
-         });
-       });
-  
-       // Check if a member with the given email already exists
-       const existingMember = await Member.findOne({ email: email });
-  
-       if (existingMember) {
-         // If a member with the given email exists, check if each projectID already exists in the member's projects array
-         updatedProjects.forEach(updatedProject => {
-           const projectAlreadyExists = existingMember.projects.some(project => project.projectID.equals(updatedProject.projectID));
- 
-           if (!projectAlreadyExists) {
-             existingMember.projects.push(updatedProject);
-           }
-         });
- 
-         await existingMember.save();
-         res.status(200).json({ message: "Project added successfully", member: existingMember });
-       } 
-       else {
-         // If a member with the given email does not exist, create a new member
-         const newMember = new Member({
-           name: name,
-           role: role,
-           email: email,
-           projects: updatedProjects,
-         });
-  
-         // Save the new member to the database
-         const savedMember = await newMember.save();
-  
-         // Send a success response
-         res.status(201).json({ message: "Member added successfully", member: savedMember });
-       }
+    // Extract member details from the request body
+    const { name, role, email, projects } = req.body;
+
+    // Create an array to store the updated projects
+    const updatedProjects = [];
+
+    // Loop through the provided projects and update the projectID
+    projects.forEach((project) => {
+      updatedProjects.push({
+        projectID: new ObjectId(project.projectID),
+        type: project.type,
+      });
+    });
+
+    // Check if a member with the given email already exists
+    const existingMember = await Member.findOne({ email: email });
+
+    if (existingMember) {
+      // If a member with the given email exists, check if each projectID already exists in the member's projects array
+      updatedProjects.forEach((updatedProject) => {
+        const projectAlreadyExists = existingMember.projects.some((project) =>
+          project.projectID.equals(updatedProject.projectID)
+        );
+
+        if (!projectAlreadyExists) {
+          existingMember.projects.push(updatedProject);
+        }
+      });
+
+      await existingMember.save();
+      res
+        .status(200)
+        .json({
+          message: "Project added successfully",
+          member: existingMember,
+        });
+    } else {
+      // If a member with the given email does not exist, create a new member
+      const newMember = new Member({
+        name: name,
+        role: role,
+        email: email,
+        projects: updatedProjects,
+      });
+
+      // Save the new member to the database
+      const savedMember = await newMember.save();
+
+      // Send a success response
+      res
+        .status(201)
+        .json({ message: "Member added successfully", member: savedMember });
+    }
   } catch (error) {
-       // Handle any errors
-       console.error(error);
-       res.status(500).json({ message: "Internal Server Error" });
+    // Handle any errors
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
-  });
+});
+
 app.get("/get-members", async (req, res) => {
   // const membersCollection = db.collection("Members");
 
