@@ -183,12 +183,18 @@ app.get("/members/search", async (req, res) => {
     //insensitive
     const regex = new RegExp(searchTerm, "i");
     const members = await Member.find({
-      $and: [
+      $or: [
         {
-          $or: [{ name: regex }, { role: regex }, { email: regex }],
+          name: regex,
         },
         {
-          $nor: [{ "projects.projectId": "657aa5e1770d840a02e05056" }],
+          role: regex,
+        },
+        {
+          email: regex,
+        },
+        {
+          type: regex,
         },
       ],
     });
@@ -211,30 +217,45 @@ app.get("/members/search", async (req, res) => {
 
 app.post("/add-member", async (req, res) => {
   try {
-    // Extract member details from the request body
-    const { projectID, name, role, email, type } = req.body;
-    // Convert projectID to ObjectId
-    const objectIdProjectID = mongoose.Types.ObjectId(projectID);
+     // Extract member details from the request body
+     const { name, role, email, projects } = req.body;
+    //  const projectsChangeType = [{
+    //   projectID: ObjectId(projects.projectID),
+    //   type: projects.type
+    //  }]
 
-    // Create a new member instance
-    const newMember = new Member({
-      projectID: objectIdProjectID,
-      name: name,
-      role: role,
-      email: email,
-      type: type,
-    });
+    //  projects.projectID = ObjectId(projects.projectID)
+     // Create a new member instance with the project
+     const newMember = new Member({
+       name: name,
+       role: role,
+       email: email,
+       projects: projects,
+     });
 
-    // Save the new member to the database
-    await newMember.save();
-
-    // Send a success response
-    res
-      .status(201)
-      .json({ message: "Member added successfully", member: newMember });
+ console.log(newMember);
+     // Save the new member to the database
+     const savedMember = await newMember.save();
+ 
+     // Send a success response
+     res
+       .status(201)
+       .json({ message: "Member added successfully", member: savedMember });
   } catch (error) {
-    // Handle any errors
-    console.error(error);
-    res.status(500).json({ message: "Internal Server Error" });
+     // Handle any errors
+     console.error(error);
+     res.status(500).json({ message: "Internal Server Error" });
+  }
+ });
+
+app.get("/get-members", async (req, res) => {
+  // const membersCollection = db.collection("Members");
+
+  try {
+    const members = await Member.find();
+
+    res.json(members);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });

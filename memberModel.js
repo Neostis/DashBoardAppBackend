@@ -1,4 +1,5 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
+const { ObjectId } = require("mongodb");
 
 const memberSchema = new mongoose.Schema({
   name: String,
@@ -6,10 +7,11 @@ const memberSchema = new mongoose.Schema({
   email: String,
   projects: [
     {
-      projectId: String,
-      type: String,
+      projectID: { type: ObjectId, required: true },
+      type: { type: String, required: true },
     },
-  ],
+ ],
 });
-const Member = mongoose.model("Member", memberSchema, "Members");
+
+const Member = mongoose.model('TestMembers', memberSchema); // Specify 'TestMembers' as the collection name
 module.exports = Member;
