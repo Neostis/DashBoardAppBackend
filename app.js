@@ -211,3 +211,31 @@ app.get("/members/search", async (req, res) => {
   //   res.json(members); // Send the retrieved files as JSON response
   // });
 });
+
+app.post("/add-member", async (req, res) => {
+  try {
+    // Extract member details from the request body
+    const { projectID, name, role, email, type } = req.body;
+    // Convert projectID to ObjectId
+    const objectIdProjectID = mongoose.Types.ObjectId(projectID);
+
+    // Create a new member instance
+    const newMember = new Member({
+      projectID: objectIdProjectID,
+      name: name,
+      role: role,
+      email: email,
+      type: type,
+    });
+
+    // Save the new member to the database
+    await newMember.save();
+
+    // Send a success response
+    res.status(201).json({ message: "Member added successfully", member: newMember });
+  } catch (error) {
+    // Handle any errors
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
