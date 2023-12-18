@@ -103,16 +103,16 @@ app.get("/get-projects", async (req, res) => {
 });
 
 /* The code you provided is a route handler for uploading a file to the server. It listens for POST
-requests to the '/upload-files/:projectID' endpoint, where ':projectID' is a parameter representing
+requests to the '/upload-files/:projectId' endpoint, where ':projectId' is a parameter representing
 the ID of the project the file belongs to. */
 app.post(
-  "/upload-files/:projectID",
+  "/upload-files/:projectId",
   upload.single("file"),
   async (req, res) => {
     const title = req.file.originalname;
     const type = path.extname(title).substr(1);
     const lastModified = Date.now();
-    const projectID = mongoose.Types.ObjectId(req.params.projectID);
+    const projectId = mongoose.Types.ObjectId(req.params.projectId);
 
     try {
       const db = mongoose.connection.db; // Access the native MongoDB driver's database object
@@ -128,7 +128,7 @@ app.post(
           title: title,
           type: type,
           lastModified: lastModified,
-          projectID: projectID, // Add projectID to the metadata
+          projectId: projectId, // Add projectId to the metadata
         },
       });
 
@@ -176,10 +176,9 @@ app.listen(5000, () => {
 });
 
 app.get("/members/search", async (req, res) => {
-  // const membersCollection = db.collection("Members");
-
   try {
     const searchTerm = req.query.name;
+    const projectId = req.query.projectId;
     //insensitive
     const regex = new RegExp(searchTerm, "i");
     const members = await Member.find({
@@ -215,7 +214,6 @@ app.get("/members/search", async (req, res) => {
   // });
 });
 
-// Your endpoint to add a member
 app.post("/add-member", async (req, res) => {
   try {
     // Extract member details from the request body
@@ -224,10 +222,10 @@ app.post("/add-member", async (req, res) => {
     // Create an array to store the updated projects
     const updatedProjects = [];
 
-    // Loop through the provided projects and update the projectID
+    // Loop through the provided projects and update the projectId
     projects.forEach((project) => {
       updatedProjects.push({
-        projectID: new ObjectId(project.projectID),
+        projectId: new ObjectId(project.projectId),
         type: project.type,
       });
     });
@@ -236,10 +234,10 @@ app.post("/add-member", async (req, res) => {
     const existingMember = await Member.findOne({ email: email });
 
     if (existingMember) {
-      // If a member with the given email exists, check if each projectID already exists in the member's projects array
+      // If a member with the given email exists, check if each projectId already exists in the member's projects array
       updatedProjects.forEach((updatedProject) => {
         const projectAlreadyExists = existingMember.projects.some((project) =>
-          project.projectID.equals(updatedProject.projectID)
+          project.projectId.equals(updatedProject.projectId)
         );
 
         if (!projectAlreadyExists) {
