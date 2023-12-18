@@ -217,36 +217,30 @@ app.get("/members/search", async (req, res) => {
 
 app.post("/add-member", async (req, res) => {
   try {
-     // Extract member details from the request body
-     const { name, role, email, projects } = req.body;
-    //  const projectsChangeType = [{
-    //   projectID: ObjectId(projects.projectID),
-    //   type: projects.type
-    //  }]
+    // Extract member details from the request body
+    const { name, role, email, projects } = req.body;
 
-    //  projects.projectID = ObjectId(projects.projectID)
-     // Create a new member instance with the project
-     const newMember = new Member({
-       name: name,
-       role: role,
-       email: email,
-       projects: projects,
-     });
+    const newMember = new Member({
+      name: name,
+      role: role,
+      email: email,
+      projects: projects,
+    });
 
- console.log(newMember);
-     // Save the new member to the database
-     const savedMember = await newMember.save();
- 
-     // Send a success response
-     res
-       .status(201)
-       .json({ message: "Member added successfully", member: savedMember });
+    console.log(newMember);
+    // Save the new member to the database
+    const savedMember = await newMember.save();
+
+    // Send a success response
+    res
+      .status(201)
+      .json({ message: "Member added successfully", member: savedMember });
   } catch (error) {
-     // Handle any errors
-     console.error(error);
-     res.status(500).json({ message: "Internal Server Error" });
+    // Handle any errors
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
- });
+});
 
 app.get("/get-members", async (req, res) => {
   // const membersCollection = db.collection("Members");
