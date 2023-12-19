@@ -294,27 +294,30 @@ app.get("/get-members/:role", async (req, res) => {
   }
  });
 
- app.put('/update-member/:id', async (req, res) => {
-  console.log('/update-member/:id');
-  try {
-    const memberId = req.params.id;
-    const { role } = req.body;
+ app.put("/update-member/:id", async (req, res) => {
+   try {
+     const memberId = req.params.id;
+     const { projectId, type } = req.body;
 
-    if (!mongoose.Types.ObjectId.isValid(memberId)) {
-      return res.status(400).json({ message: 'Invalid member ID' });
-    }
+     if (
+       !mongoose.Types.ObjectId.isValid(memberId) ||
+       !mongoose.Types.ObjectId.isValid(projectId)
+     ) {
+       return res.status(400).json({ message: "Invalid member or project ID" });
+     }
 
-    const result = await Member.updateOne({ _id: memberId }, { $set: { role: role } });
+     const result = await Member.updateOne(
+       { _id: memberId, "projects.projectId": projectId },
+       { $set: { "projects.$.type": type } }
+     );
 
-    if (result.ok === 1) {
-      // If `ok` is 1, it means the update was successful
-      // res.status(200).json({ message: 'Member role updated successfully' });
-    } else {
-      // If `ok` is not 1, it means the update failed (member not found, etc.)
-      // res.status(404).json({ message: 'Member not found or update failed' });
-    }
-  } catch (error) {
-    // console.error(error);
-    // res.status(500).json({ message: 'Internal Server Error' });
-  }
-});
+     if (result.ok === 1) {
+       res.status(200).json({ message: "Member type updated successfully" });
+     } else {
+       res.status(404).json({ message: "Member not found or update failed" });
+     }
+   } catch (error) {
+     console.error(error);
+     res.status(500).json({ message: "Internal Server Error" });
+   }
+ });
