@@ -176,12 +176,19 @@ app.listen(5000, () => {
 });
 
 app.get("/members/getProjectMembers", async (req, res) => {
-  // const ProjectId = new ObjectId(req.query.projectId);
-  const projectId = new ObjectId(req.query.projectId);
+  const ProjectId = new ObjectId(req.query.projectId);
   try {
-    const members = await Member.find({ "projects.ProjectId": projectId });
+    const members = await Member.find({ "projects.ProjectId": ProjectId });
+    const filterMembers = members
+      .map((m) => ({
+        name: m.name,
+        role: m.role,
+        email: m.email,
+        projects: m.projects.filter((p) => p.projectId.equals(ProjectId)),
+      }))
+      .filter((m) => m.projects.length > 0);
 
-    res.json(members);
+    res.json(filterMembers);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
