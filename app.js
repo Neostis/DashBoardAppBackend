@@ -175,6 +175,18 @@ app.listen(5000, () => {
   console.log("Server Started");
 });
 
+app.get("/members/getProjectMembers", async (req, res) => {
+  // const ProjectId = new ObjectId(req.query.projectId);
+  const projectId = new ObjectId(req.query.projectId);
+  try {
+    const members = await Member.find({ "projects.ProjectId": projectId });
+
+    res.json(members);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 app.get("/members/search", async (req, res) => {
   try {
     const searchTerm = req.query.name;
@@ -202,16 +214,6 @@ app.get("/members/search", async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-
-  // membersCollection.find({}).toArray((err, members) => {
-  //   if (err) {
-  //     console.error("Error occurred while fetching files:", err);
-  //     res.status(500).json({ error: "Internal server error" });
-  //     return;
-  //   }
-
-  //   res.json(members); // Send the retrieved files as JSON response
-  // });
 });
 
 // Your endpoint to add a member
@@ -276,35 +278,37 @@ app.post("/add-member", async (req, res) => {
 });
 
 app.get("/get-members/:role", async (req, res) => {
-
-  const roleFilter = req.params.role.replace(/[^a-zA-Z0-9]/g, '');
+  const roleFilter = req.params.role.replace(/[^a-zA-Z0-9]/g, "");
 
   try {
-     let query = {};
- 
-     if (roleFilter) {
-       query = { role: roleFilter };
-     }
- 
-     const members = await Member.find(query);
- 
-     res.json(members);
-  } catch (error) {
-     res.status(500).json({ message: error.message });
-  }
- });
+    let query = {};
 
- app.put('/update-member/:id', async (req, res) => {
-  console.log('/update-member/:id');
+    if (roleFilter) {
+      query = { role: roleFilter };
+    }
+
+    const members = await Member.find(query);
+
+    res.json(members);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.put("/update-member/:id", async (req, res) => {
+  console.log("/update-member/:id");
   try {
     const memberId = req.params.id;
     const { role } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(memberId)) {
-      return res.status(400).json({ message: 'Invalid member ID' });
+      return res.status(400).json({ message: "Invalid member ID" });
     }
 
-    const result = await Member.updateOne({ _id: memberId }, { $set: { role: role } });
+    const result = await Member.updateOne(
+      { _id: memberId },
+      { $set: { role: role } }
+    );
 
     if (result.ok === 1) {
       // If `ok` is 1, it means the update was successful
