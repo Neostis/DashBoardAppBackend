@@ -319,13 +319,21 @@ app.put("/update-member/:id", async (req, res) => {
       { $set: { "projects.$.type": type } }
     );
 
-    if (result.ok === 1) {
-      res.status(200).json({ message: "Member type updated successfully" });
+    if (result && result.nModified > 0) {
+      return res.json({ message: "Update successful", result });
     } else {
-      res.status(404).json({ message: "Member not found or update failed" });
+      return res.json({
+        message: "No document matched the update criteria",
+        result,
+      });
     }
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json({ message: error.message });
   }
 });
+
+// if (result.ok === 1) {
+//   res.status(200).json({ message: "Member type updated successfully" });
+// } else {
+//   res.status(404).json({ message: "Member not found or update failed" });
+// }
