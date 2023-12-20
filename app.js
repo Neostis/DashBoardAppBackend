@@ -12,6 +12,8 @@ const fs = require("fs");
 const path = require("path");
 const { ObjectId } = require("mongodb");
 const Member = require("./memberModel");
+const Task = require("./taskModel");
+
 var db;
 // MongoDB connection
 const mongoUrl =
@@ -324,6 +326,56 @@ app.put("/update-member/:id", async (req, res) => {
     } else {
       res.status(404).json({ message: "Member not found or update failed" });
     }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+app.post("/add-tasks", async (req, res) => {
+  try {
+    // Extract task details from the request body
+    const { title, date, details, projectId, status, tags, members } = req.body;
+
+    // Create a new task instance
+    const newTask = new Task({
+      title,
+      date,
+      details,
+      projectId,
+      status,
+      tags,
+      members,
+    });
+    console.log(newTask);
+
+    // Save the new task to the database
+    const savedTask = await newTask.save();
+
+    // Send a success response
+    res
+      .status(201)
+      .json({ message: "Task created successfully", task: savedTask });
+  } catch (error) {
+    // Handle any errors
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+app.get("/get-tasks/:projectId", async (req, res) => {
+  try {
+    const projectId = req.params.projectId;
+
+    // Validate if projectId is a valid ObjectId (assuming MongoDB ObjectId)
+    if (!mongoose.Types.ObjectId.isValid(projectId)) {
+      return res.status(400).json({ message: "Invalid project ID" });
+    }
+
+    // Find tasks based on the projectId
+    const tasks = await Task.find({ projectId: projectId });
+
+    res.status(200).json({ tasks: tasks });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
