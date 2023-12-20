@@ -184,7 +184,7 @@ app.get("/members/getProjectMembers", async (req, res) => {
         name: m.name,
         role: m.role,
         email: m.email,
-        projects: m.projects.filter((p) => p.projectId.equals(ProjectId)),
+        projects: m.projects,
       }))
       .filter((m) => m.projects.length > 0);
 
