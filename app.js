@@ -226,40 +226,147 @@ app.get("/members/search", async (req, res) => {
 });
 
 // Your endpoint to add a member
-app.post("/add-member", async (req, res) => {
+// app.post("/add-member", async (req, res) => {
+//   try {
+//     // Extract member details from the request body
+//     const { name, role, email, projects } = req.body;
+
+//     // Create an array to store the updated projects
+//     const updatedProjects = [];
+
+//     // Loop through the provided projects and update the projectId
+//     projects.forEach((project) => {
+//       updatedProjects.push({
+//         projectId: new ObjectId(project.projectId),
+//         type: project.type,
+//       });
+//     });
+
+//     // Check if a member with the given email already exists
+//     const existingMember = await Member.findOne({ email: email });
+
+//     if (existingMember) {
+//       // If a member with the given email exists, check if each projectId already exists in the member's projects array
+//       updatedProjects.forEach((updatedProject) => {
+//         const projectAlreadyExists = existingMember.projects.some((project) =>
+//           project.projectId.equals(updatedProject.projectId)
+//         );
+
+//         if (!projectAlreadyExists) {
+//           existingMember.projects.push(updatedProject);
+//         }
+//       });
+
+//       await existingMember.save();
+//       res.status(200).json({
+//         message: "Project added successfully",
+//         member: existingMember,
+//       });
+//     } else {
+//       // If a member with the given email does not exist, create a new member
+//       const newMember = new Member({
+//         name: name,
+//         role: role,
+//         email: email,
+//         projects: updatedProjects,
+//       });
+
+//       // Save the new member to the database
+//       const savedMember = await newMember.save();
+
+//       // Send a success response
+//       res
+//         .status(201)
+//         .json({ message: "Member added successfully", member: savedMember });
+//     }
+//   } catch (error) {
+//     // Handle any errors
+//     console.error(error);
+//     res.status(500).json({ message: "Internal Server Error" });
+//   }
+// });
+
+app.get("/get-members/:role", async (req, res) => {
+  const roleFilter = req.params.role.replace(/[^a-zA-Z0-9]/g, "");
+
+  try {
+    let query = {};
+
+    if (roleFilter) {
+      query = { role: roleFilter };
+    }
+
+    const members = await Member.find(query);
+
+    res.json(members);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// app.put("/update-member/:id", async (req, res) => {
+//   try {
+//     const memberId = req.params.id;
+//     const { projectId, type } = req.body;
+
+//     if (
+//       !mongoose.Types.ObjectId.isValid(memberId) ||
+//       !mongoose.Types.ObjectId.isValid(projectId)
+//     ) {
+//       return res.status(400).json({ message: "Invalid member or project ID" });
+//     }
+
+//     const result = await Member.updateOne(
+//       { _id: memberId, "projects.projectId": projectId },
+//       { $set: { "projects.$.type": type } }
+//     );
+
+//     if (result && result.nModified > 0) {
+//       return res.json({ message: "Update successful", result });
+//     } else {
+//       return res.json({
+//         message: "No document matched the update criteria",
+//         result,
+//       });
+//     }
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// });
+
+app.post("/add-update-member", async (req, res) => {
   try {
     // Extract member details from the request body
     const { name, role, email, projects } = req.body;
 
     // Create an array to store the updated projects
-    const updatedProjects = [];
-
-    // Loop through the provided projects and update the projectId
-    projects.forEach((project) => {
-      updatedProjects.push({
-        projectId: new ObjectId(project.projectId),
-        type: project.type,
-      });
-    });
+    const updatedProjects = projects.map((project) => ({
+      projectId: new ObjectId(project.projectId),
+      type: project.type,
+    }));
 
     // Check if a member with the given email already exists
     const existingMember = await Member.findOne({ email: email });
 
     if (existingMember) {
-      // If a member with the given email exists, check if each projectId already exists in the member's projects array
+      // If a member with the given email exists, update the projects array
       updatedProjects.forEach((updatedProject) => {
-        const projectAlreadyExists = existingMember.projects.some((project) =>
+        const projectIndex = existingMember.projects.findIndex((project) =>
           project.projectId.equals(updatedProject.projectId)
         );
 
-        if (!projectAlreadyExists) {
+        if (projectIndex !== -1) {
+          // Update the existing project
+          existingMember.projects[projectIndex].type = updatedProject.type;
+        } else {
+          // Add the new project
           existingMember.projects.push(updatedProject);
         }
       });
 
       await existingMember.save();
       res.status(200).json({
-        message: "Project added successfully",
+        message: "Member updated successfully",
         member: existingMember,
       });
     } else {
@@ -283,54 +390,6 @@ app.post("/add-member", async (req, res) => {
     // Handle any errors
     console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
-  }
-});
-
-app.get("/get-members/:role", async (req, res) => {
-  const roleFilter = req.params.role.replace(/[^a-zA-Z0-9]/g, "");
-
-  try {
-    let query = {};
-
-    if (roleFilter) {
-      query = { role: roleFilter };
-    }
-
-    const members = await Member.find(query);
-
-    res.json(members);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-app.put("/update-member/:id", async (req, res) => {
-  try {
-    const memberId = req.params.id;
-    const { projectId, type } = req.body;
-
-    if (
-      !mongoose.Types.ObjectId.isValid(memberId) ||
-      !mongoose.Types.ObjectId.isValid(projectId)
-    ) {
-      return res.status(400).json({ message: "Invalid member or project ID" });
-    }
-
-    const result = await Member.updateOne(
-      { _id: memberId, "projects.projectId": projectId },
-      { $set: { "projects.$.type": type } }
-    );
-
-    if (result && result.nModified > 0) {
-      return res.json({ message: "Update successful", result });
-    } else {
-      return res.json({
-        message: "No document matched the update criteria",
-        result,
-      });
-    }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
   }
 });
 
@@ -381,5 +440,69 @@ app.get("/get-tasks/:projectId", async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+app.put('/add-member-to-task/:id', async (req, res) => {
+  const taskId = req.params.id;
+  const { memberId } = req.body;
+
+  try {
+    if (!mongoose.Types.ObjectId.isValid(taskId)) {
+      return res.status(400).json({ message: 'Invalid task ID' });
+    }
+
+    const updatedTask = await Task.findByIdAndUpdate(
+      taskId,
+      { $addToSet: { members: memberId } }, // Use $addToSet to add memberId if it doesn't exist
+      { new: true }
+    );
+
+    if (!updatedTask) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    res.status(200).json(updatedTask);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+// Add Tags to Task
+app.put('/add-tags/:taskId', async (req, res) => {
+  try {
+    const { tags } = req.body;
+    const taskId = req.params.taskId;
+
+    const updatedTask = await Task.findByIdAndUpdate(
+      taskId,
+      { $addToSet: { tags: { $each: tags } } },
+      { new: true }
+    );
+
+    res.json(updatedTask);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+// Remove Tags from Task
+app.put('/remove-tags/:taskId', async (req, res) => {
+  try {
+    const { tags } = req.body;
+    const taskId = req.params.taskId;
+
+    const updatedTask = await Task.findByIdAndUpdate(
+      taskId,
+      { $pull: { tags: { $in: tags } } },
+      { new: true }
+    );
+
+    res.json(updatedTask);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 });
