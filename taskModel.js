@@ -7,8 +7,7 @@ const taskSchema = new mongoose.Schema({
   projectId: String,
   status: {
     type: String,
-    enum: ['Yet to start', 'In Progress', 'Completed'],
-    default: 'Yet to start',
+    default: "Yet To start",
   },
   tags: [String],
   members: [String],
