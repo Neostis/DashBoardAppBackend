@@ -400,13 +400,13 @@ app.post("/add-tasks", async (req, res) => {
 
     // Create a new task instance
     const newTask = new Task({
-      title,
-      date,
-      details,
-      projectId,
-      status,
-      tags,
-      members,
+      title: title,
+      date: date,
+      details: details,
+      projectId: projectId,
+      status: status,
+      tags: tags,
+      members: members,
     });
     console.log(newTask);
 
@@ -420,13 +420,13 @@ app.post("/add-tasks", async (req, res) => {
   } catch (error) {
     // Handle any errors
     console.error(error);
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json({ message: error });
   }
 });
 
 app.get("/get-tasks/:projectId", async (req, res) => {
   try {
-    const projectId = req.params.projectId;
+    const projectId = new ObjectId(req.params.projectId);
 
     // Validate if projectId is a valid ObjectId (assuming MongoDB ObjectId)
     if (!mongoose.Types.ObjectId.isValid(projectId)) {
@@ -436,7 +436,7 @@ app.get("/get-tasks/:projectId", async (req, res) => {
     // Find tasks based on the projectId
     const tasks = await Task.find({ projectId: projectId });
 
-    res.status(200).json({ tasks: tasks });
+    res.json(tasks);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
@@ -449,7 +449,7 @@ app.put('/add-member-to-task/:taskId', async (req, res) => {
 
   try {
     if (!mongoose.Types.ObjectId.isValid(taskId)) {
-      return res.status(400).json({ message: 'Invalid task ID' });
+      return res.status(400).json({ message: "Invalid task ID" });
     }
 
     const updatedTask = await Task.findByIdAndUpdate(
@@ -459,18 +459,18 @@ app.put('/add-member-to-task/:taskId', async (req, res) => {
     );
 
     if (!updatedTask) {
-      return res.status(404).json({ message: 'Task not found' });
+      return res.status(404).json({ message: "Task not found" });
     }
 
     res.status(200).json(updatedTask);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
 // Add Tags to Task
-app.put('/add-tags/:taskId', async (req, res) => {
+app.put("/add-tags/:taskId", async (req, res) => {
   try {
     const { tags } = req.body;
     const taskId = req.params.taskId;
@@ -484,12 +484,12 @@ app.put('/add-tags/:taskId', async (req, res) => {
     res.json(updatedTask);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
 // Remove Tags from Task
-app.put('/remove-tags/:taskId', async (req, res) => {
+app.put("/remove-tags/:taskId", async (req, res) => {
   try {
     const { tags } = req.body;
     const taskId = req.params.taskId;
@@ -503,7 +503,7 @@ app.put('/remove-tags/:taskId', async (req, res) => {
     res.json(updatedTask);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
