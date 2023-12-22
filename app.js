@@ -443,8 +443,8 @@ app.get("/get-tasks/:projectId", async (req, res) => {
   }
 });
 
-app.put('/add-member-to-task/:id', async (req, res) => {
-  const taskId = req.params.id;
+app.put('/add-member-to-task/:taskId', async (req, res) => {
+  const taskId = req.params.taskId;
   const { memberId } = req.body;
 
   try {
@@ -506,3 +506,27 @@ app.put('/remove-tags/:taskId', async (req, res) => {
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
+
+// Remove Member from Task
+app.put('/remove-member-from-task/:taskId', async (req, res) => {
+  try {
+    const { memberId } = req.body;
+    const taskId = req.params.taskId;
+
+    if (!mongoose.Types.ObjectId.isValid(taskId) || !mongoose.Types.ObjectId.isValid(memberId)) {
+      return res.status(400).json({ message: 'Invalid task or member ID' });
+    }
+
+    const updatedTask = await Task.findByIdAndUpdate(
+      taskId,
+      { $pull: { members: memberId } },
+      { new: true }
+    );
+
+    res.json(updatedTask);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
