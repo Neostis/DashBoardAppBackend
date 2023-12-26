@@ -13,6 +13,7 @@ const path = require("path");
 const { ObjectId } = require("mongodb");
 const Member = require("./memberModel");
 const Task = require("./taskModel");
+const Payment = require("./paymentModel");
 
 var db;
 // MongoDB connection
@@ -535,8 +536,63 @@ app.put("/remove-member-from-task/:taskId", async (req, res) => {
 
 app.post("/update-payment", async (req, res) => {
   try {
+    const { projectId, usage, note, budget, change, notification } = req.body;
+
+    // Check if the project already has a payment
+    const existingPayment = await Payment.findOne({ projectId: ObjectId(projectId) });
+
+    if (existingPayment) {
+      // If a payment exists, update it
+      existingPayment.usage = usage;
+      existingPayment.note = note;
+      existingPayment.budget = budget;
+      existingPayment.change = change;
+      existingPayment.notification = notification;
+
+      const updatedPayment = await existingPayment.save();
+
+      res.status(200).json({
+        message: "Payment updated successfully",
+        payment: updatedPayment,
+      });
+    } else {
+      // If no payment exists, create a new one
+      const newPayment = new Payment({
+        projectId: ObjectId(projectId),
+        usage: usage,
+        note: note,
+        budget: budget,
+        change: change,
+        notification: notification,
+      });
+
+      const savedPayment = await newPayment.save();
+
+      res.status(201).json({
+        message: "Payment created successfully",
+        payment: savedPayment,
+      });
+    }
   } catch (error) {
-    // Handle any errors
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+app.get("/get-payments/:projectId", async (req, res) => {
+  try {
+    const projectId = req.params.projectId;
+
+    // Check if the projectId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(projectId)) {
+      return res.status(400).json({ message: "Invalid project ID" });
+    }
+
+    // Find payments for the specified project
+    const payments = await Payment.find({ projectId: ObjectId(projectId) });
+
+    res.status(200).json({ payments });
+  } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
   }
