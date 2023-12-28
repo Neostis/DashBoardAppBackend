@@ -534,6 +534,32 @@ app.put("/remove-member-from-task/:taskId", async (req, res) => {
   }
 });
 
+app.put('/update-task-status/:taskId', async (req, res) => {
+  try {
+    const { status } = req.body;
+    const taskId = req.params.taskId;
+
+    if (!mongoose.Types.ObjectId.isValid(taskId)) {
+      return res.status(400).json({ message: 'Invalid task ID' });
+    }
+
+    const updatedTask = await Task.findByIdAndUpdate(
+      taskId,
+      { $set: { status: status } },
+      { new: true }
+    );
+
+    if (!updatedTask) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    res.json({ message: 'Task status updated successfully', task: updatedTask });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
 app.post("/update-payment", async (req, res) => {
   try {
     const { projectId, usage, note, budget, change, notification } = req.body;
@@ -597,3 +623,5 @@ app.get("/get-payments/:projectId", async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
+
+// module.exports = app;
