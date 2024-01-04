@@ -1,6 +1,6 @@
 'use strict'
 const awsServerlessExpress = require('aws-serverless-express')
-const app = require('./index'); // Assuming 'app.js' is in the same directory
+const app = require('./app'); // Assuming 'app.js' is in the same directory
 const binaryMimeTypes = [
     'application/json',
     'application/octet-stream',
