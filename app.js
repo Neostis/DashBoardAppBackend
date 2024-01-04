@@ -285,12 +285,22 @@ app.post("/add-update-member", async (req, res) => {
 app.post("/add-tasks", async (req, res) => {
   try {
     // Extract task details from the request body
-    const { title, date, details, projectId, status, tags, members } = req.body;
+    const {
+      title,
+      startDate,
+      endDate,
+      details,
+      projectId,
+      status,
+      tags,
+      members,
+    } = req.body;
 
     // Create a new task instance
     const newTask = new Task({
       title: title,
-      date: date,
+      startDate: startDate,
+      endDate: endDate,
       details: details,
       projectId: projectId,
       status: status,
@@ -437,6 +447,7 @@ app.put("/update-task-status/:taskId", async (req, res) => {
       task: updatedTask,
     });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
@@ -450,7 +461,7 @@ app.post("/update-payment", async (req, res) => {
       return res.status(400).json({ message: "Invalid project ID" });
     }
 
-    // Find payments for the specified project
+    // Check if the project already has a payment
     const existingPayment = await Payment.findOne({
       projectId: ObjectId(projectId),
     });
