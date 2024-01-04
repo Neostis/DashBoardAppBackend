@@ -350,17 +350,26 @@ app.post("/add-tasks", async (req, res) => {
       members: members,
     });
 
+    const newTimeline = new Timeline({
+      label: title,
+      taskId: newTask._id,
+      projectId: projectId,
+      connections: [],
+      dateStart: startDate,
+      dateEnd: endDate,
+      type: "task",
+    });
+
     // Save the new task to the database
     const savedTask = await newTask.save();
+    const savedTimeline = await newTimeline.save();
 
     // Send a success response
     res
       .status(201)
       .json({ message: "Task created successfully", task: savedTask });
   } catch (error) {
-    // Handle any errors
-
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json({ message: "Internal Server Error", error });
   }
 });
 
@@ -504,13 +513,39 @@ app.put("/update-task-status/:taskId", async (req, res) => {
 
     res.status(201).json({
       message: "Task status updated successfully",
-      task: updatedTask,
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
+
+app.get("/get-timelines/:projectId", async (req, res) => {
+  try {
+    const projectId = new ObjectId(req.params.projectId);
+
+    // Validate if projectId is a valid ObjectId (assuming MongoDB ObjectId)
+    if (!mongoose.Types.ObjectId.isValid(projectId)) {
+      return res.status(400).json({ message: "Invalid project ID" });
+    }
+
+    // Find tasks based on the projectId
+    const tasks = await Timeline.find({ projectId: projectId });
+
+    res.json(tasks);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+// app.put("/update-timelines", async (req, res) => {
+//   try {
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Internal Server Error" });
+//   }
+// });
 
 app.post("/update-payment", async (req, res) => {
   if (!db) {
@@ -541,7 +576,6 @@ app.post("/update-payment", async (req, res) => {
 
       res.status(200).json({
         message: "Payment updated successfully",
-        payment: updatedPayment,
       });
     } else {
       // If no payment exists, create a new one
@@ -558,7 +592,6 @@ app.post("/update-payment", async (req, res) => {
 
       res.status(201).json({
         message: "Payment created successfully",
-        payment: savedPayment,
       });
     }
   } catch (error) {
