@@ -1,55 +1,50 @@
-/* The code you provided is a Node.js server using the Express framework. It sets up a server that
-listens on port 5000 and handles various routes for file upload, retrieval, and deletion using
-MongoDB's GridFS for storing files. */
 const express = require("express");
-const app = express();
-const mongoose = require("mongoose");
-app.use(express.json());
 const cors = require("cors");
-app.use(cors());
-app.use("/files", express.static("files"));
+const mongoose = require("mongoose");
 const fs = require("fs");
 const path = require("path");
 const { ObjectId } = require("mongodb");
+const multer = require("multer");
+const storage = multer.memoryStorage(); // Use memory storage for multer
+const upload = multer({ storage: storage });
+
 const Member = require("./memberModel");
 const Task = require("./taskModel");
 const Payment = require("./paymentModel");
+const memberModel = require("./memberModel");
+
+const app = express();
+app.use(cors());
+
+const bodyParser = require("body-parser");
+app.use(express.json());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use("/files", express.static("files"));
 
 var db;
 // MongoDB connection
 const mongoUrl =
   "mongodb+srv://admin:admin@cluster0.5wtjno2.mongodb.net/a?retryWrites=true&w=majority";
 
-mongoose
-  .connect(mongoUrl, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
-    console.log("Connected to database");
-  })
-  .catch((e) => console.log(e));
+app.get("/", (req, res) => {
+  mongoose
+    .connect(mongoUrl, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    })
+    .then(() => {
+      res.status(200).send("Connected to database");
+    })
+    .catch((e) => res.send(e));
 
-//Check if connection establish
-mongoose.connection.once("open", () => {
-  db = mongoose.connection.db;
-});
-// Multer
-const multer = require("multer");
-const memberModel = require("./memberModel");
-
-const storage = multer.memoryStorage(); // Use memory storage for multer
-
-const upload = multer({ storage: storage });
-
-// const db = mongoose.connection.db; // Access the native MongoDB driver's database object
-
-app.get("/", async (req, res) => {
-  res.send("Success!!!!!!");
+  //Check if connection establish
+  mongoose.connection.once("open", () => {
+    db = mongoose.connection.db;
+  });
+  //   res.send("Welcome");
 });
 
-/* The code you provided is a route handler for retrieving a list of files from the server. It listens
-for GET requests to the '/get-files' endpoint. */
 app.get("/get-files", async (req, res) => {
   const filesCollection = db.collection("fs.files");
 
@@ -57,17 +52,12 @@ app.get("/get-files", async (req, res) => {
     // Retrieve all files from fs.files
     const allFiles = await filesCollection.find().toArray();
 
-    // Send the list of files as a response
-    res.json(allFiles);
+    res.status(200).json(allFiles);
   } catch (error) {
-    console.error(error);
     res.status(500).send("Internal Server Error");
   }
 });
 
-/* The code you provided is a route handler for retrieving a file from the server. It listens for GET
-requests to the '/get-file/:fileId' endpoint, where ':fileId' is a parameter representing the ID of
-the file to be retrieved. */
 app.get("/get-file/:fileId", async (req, res) => {
   try {
     const fileId = req.params.fileId;
@@ -81,26 +71,21 @@ app.get("/get-file/:fileId", async (req, res) => {
     }
 
     bucket.openDownloadStream(ObjectId(fileId)).pipe(res);
+    res.status(200).json({ message: "Get files successfully" });
   } catch (error) {
-    console.error(error);
     res.status(500).send("Internal Server Error");
   }
 });
 
-/* The code you provided is a route handler for retrieving a list of files from the server. It listens
-for GET requests to the '/get-files' endpoint. */
 app.get("/get-projects", async (req, res) => {
-  const db = mongoose.connection.db; // Access the native MongoDB driver's database object
   const projectsCollection = db.collection("Projects");
 
   try {
     // Retrieve all files from fs.files
     const allProject = await projectsCollection.find().toArray();
 
-    // Send the list of files as a response
-    res.json(allProject);
+    res.status(200).json(allProject);
   } catch (error) {
-    console.error(error);
     res.status(500).send("Internal Server Error");
   }
 });
@@ -140,10 +125,9 @@ app.post(
       uploadStream.on("finish", async () => {
         // Remove the file from the local filesystem
         // (assuming that you don't need it after uploading to GridFS)
-        res.send({ status: "ok" });
+        res.status(201).json({ message: "Upload file successfully" });
       });
     } catch (error) {
-      console.error(error);
       res.json({ status: "Internal Server Error" });
     }
   }
@@ -167,15 +151,10 @@ app.delete("/delete-file/:fileId", async (req, res) => {
     // Remove the file from GridFS
     await bucket.delete(ObjectId(fileId));
 
-    res.json({ message: "File deleted successfully" });
+    res.status(204).json({ message: "File deleted successfully" });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
   }
-});
-
-app.listen(5000, () => {
-  console.log("Server Started");
 });
 
 app.get("/members/getProjectMembers", async (req, res) => {
@@ -191,7 +170,7 @@ app.get("/members/getProjectMembers", async (req, res) => {
       }))
       .filter((m) => m.projects.length > 0);
 
-    res.json(filterMembers);
+      res.status(200).json(filterMembers);
   } catch (error) {
     res.status(500).json({ message: "Internal Server Error" });
   }
@@ -220,72 +199,11 @@ app.get("/members/search", async (req, res) => {
       ],
     });
 
-    res.json(members);
+    res.status(200).json(members);
   } catch (error) {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
-
-// Your endpoint to add a member
-// app.post("/add-member", async (req, res) => {
-//   try {
-//     // Extract member details from the request body
-//     const { name, role, email, projects } = req.body;
-
-//     // Create an array to store the updated projects
-//     const updatedProjects = [];
-
-//     // Loop through the provided projects and update the projectId
-//     projects.forEach((project) => {
-//       updatedProjects.push({
-//         projectId: new ObjectId(project.projectId),
-//         type: project.type,
-//       });
-//     });
-
-//     // Check if a member with the given email already exists
-//     const existingMember = await Member.findOne({ email: email });
-
-//     if (existingMember) {
-//       // If a member with the given email exists, check if each projectId already exists in the member's projects array
-//       updatedProjects.forEach((updatedProject) => {
-//         const projectAlreadyExists = existingMember.projects.some((project) =>
-//           project.projectId.equals(updatedProject.projectId)
-//         );
-
-//         if (!projectAlreadyExists) {
-//           existingMember.projects.push(updatedProject);
-//         }
-//       });
-
-//       await existingMember.save();
-//       res.status(200).json({
-//         message: "Project added successfully",
-//         member: existingMember,
-//       });
-//     } else {
-//       // If a member with the given email does not exist, create a new member
-//       const newMember = new Member({
-//         name: name,
-//         role: role,
-//         email: email,
-//         projects: updatedProjects,
-//       });
-
-//       // Save the new member to the database
-//       const savedMember = await newMember.save();
-
-//       // Send a success response
-//       res
-//         .status(201)
-//         .json({ message: "Member added successfully", member: savedMember });
-//     }
-//   } catch (error) {
-//     // Handle any errors
-//     console.error(error);
-//     res.status(500).json({ message: "Internal Server Error" });
-//   }
-// });
 
 app.get("/get-members/:role", async (req, res) => {
   const roleFilter = req.params.role.replace(/[^a-zA-Z0-9]/g, "");
@@ -299,41 +217,11 @@ app.get("/get-members/:role", async (req, res) => {
 
     const members = await Member.find(query);
 
-    res.json(members);
+    res.status(200).json(members);
   } catch (error) {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
-
-// app.put("/update-member/:id", async (req, res) => {
-//   try {
-//     const memberId = req.params.id;
-//     const { projectId, type } = req.body;
-
-//     if (
-//       !mongoose.Types.ObjectId.isValid(memberId) ||
-//       !mongoose.Types.ObjectId.isValid(projectId)
-//     ) {
-//       return res.status(400).json({ message: "Invalid member or project ID" });
-//     }
-
-//     const result = await Member.updateOne(
-//       { _id: memberId, "projects.projectId": projectId },
-//       { $set: { "projects.$.type": type } }
-//     );
-
-//     if (result && result.nModified > 0) {
-//       return res.json({ message: "Update successful", result });
-//     } else {
-//       return res.json({
-//         message: "No document matched the update criteria",
-//         result,
-//       });
-//     }
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// });
 
 app.post("/add-update-member", async (req, res) => {
   try {
@@ -366,7 +254,7 @@ app.post("/add-update-member", async (req, res) => {
       });
 
       await existingMember.save();
-      res.status(200).json({
+      res.status(201).json({
         message: "Member updated successfully",
         member: existingMember,
       });
@@ -389,7 +277,7 @@ app.post("/add-update-member", async (req, res) => {
     }
   } catch (error) {
     // Handle any errors
-    console.error(error);
+
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
@@ -409,7 +297,6 @@ app.post("/add-tasks", async (req, res) => {
       tags: tags,
       members: members,
     });
-    console.log(newTask);
 
     // Save the new task to the database
     const savedTask = await newTask.save();
@@ -420,7 +307,7 @@ app.post("/add-tasks", async (req, res) => {
       .json({ message: "Task created successfully", task: savedTask });
   } catch (error) {
     // Handle any errors
-    console.error(error);
+
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
@@ -437,9 +324,8 @@ app.get("/get-tasks/:projectId", async (req, res) => {
     // Find tasks based on the projectId
     const tasks = await Task.find({ projectId: projectId });
 
-    res.json(tasks);
+    res.status(200).json(tasks);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
@@ -463,14 +349,12 @@ app.put("/add-member-to-task/:taskId", async (req, res) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    res.status(200).json(updatedTask);
+    res.status(201).json(updatedTask);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
-// Add Tags to Task
 app.put("/add-tags/:taskId", async (req, res) => {
   try {
     const { tags } = req.body;
@@ -482,14 +366,12 @@ app.put("/add-tags/:taskId", async (req, res) => {
       { new: true }
     );
 
-    res.json(updatedTask);
+    res.status(201).json(updatedTask);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
-// Remove Tags from Task
 app.put("/remove-tags/:taskId", async (req, res) => {
   try {
     const { tags } = req.body;
@@ -501,14 +383,12 @@ app.put("/remove-tags/:taskId", async (req, res) => {
       { new: true }
     );
 
-    res.json(updatedTask);
+    res.status(201).json(updatedTask);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
-// Remove Member from Task
 app.put("/remove-member-from-task/:taskId", async (req, res) => {
   try {
     const { memberId } = req.body;
@@ -527,20 +407,19 @@ app.put("/remove-member-from-task/:taskId", async (req, res) => {
       { new: true }
     );
 
-    res.json(updatedTask);
+    res.status(201).json(updatedTask);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
-app.put('/update-task-status/:taskId', async (req, res) => {
+app.put("/update-task-status/:taskId", async (req, res) => {
   try {
     const { status } = req.body;
     const taskId = req.params.taskId;
 
     if (!mongoose.Types.ObjectId.isValid(taskId)) {
-      return res.status(400).json({ message: 'Invalid task ID' });
+      return res.status(400).json({ message: "Invalid task ID" });
     }
 
     const updatedTask = await Task.findByIdAndUpdate(
@@ -550,13 +429,15 @@ app.put('/update-task-status/:taskId', async (req, res) => {
     );
 
     if (!updatedTask) {
-      return res.status(404).json({ message: 'Task not found' });
+      return res.status(404).json({ message: "Task not found" });
     }
 
-    res.json({ message: 'Task status updated successfully', task: updatedTask });
+    res.status(201).json({
+      message: "Task status updated successfully",
+      task: updatedTask,
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
@@ -564,8 +445,15 @@ app.post("/update-payment", async (req, res) => {
   try {
     const { projectId, usage, note, budget, change, notification } = req.body;
 
-    // Check if the project already has a payment
-    const existingPayment = await Payment.findOne({ projectId: ObjectId(projectId) });
+    // Check if the projectId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(projectId)) {
+      return res.status(400).json({ message: "Invalid project ID" });
+    }
+
+    // Find payments for the specified project
+    const existingPayment = await Payment.findOne({
+      projectId: ObjectId(projectId),
+    });
 
     if (existingPayment) {
       // If a payment exists, update it
@@ -600,7 +488,6 @@ app.post("/update-payment", async (req, res) => {
       });
     }
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
@@ -619,9 +506,8 @@ app.get("/get-payments/:projectId", async (req, res) => {
 
     res.status(200).json({ payments });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
-// module.exports = app;
+module.exports = app;
