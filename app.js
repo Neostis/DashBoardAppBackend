@@ -1,8 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const fs = require("fs");
 const path = require("path");
+const mime = require("mime-types");
+
 const { ObjectId } = require("mongodb");
 const multer = require("multer");
 const storage = multer.memoryStorage(); // Use memory storage for multer
@@ -22,43 +23,57 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use("/files", express.static("files"));
 
-var db;
+let db;
 // MongoDB connection
 const mongoUrl =
   "mongodb+srv://admin:admin@cluster0.5wtjno2.mongodb.net/a?retryWrites=true&w=majority";
 
-app.get("/", (req, res) => {
+//Check if connection establish
+// mongoose.connection.once("open", () => {
+//   db = mongoose.connection.db;
+// });
+
+connectMongo = () => {
   mongoose
     .connect(mongoUrl, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     })
     .then(() => {
+      db = mongoose.connection.db;
       res.status(200).send("Connected to database");
     })
-    .catch((e) => res.send(e));
+    .catch((e) => {
+      console.error("MongoDB connection error:", error);
+      res.status(500).send("Internal Server Error");
+    });
+};
 
-  //Check if connection establish
-  mongoose.connection.once("open", () => {
-    db = mongoose.connection.db;
-  });
-  //   res.send("Welcome");
+app.get("/", (req, res) => {
+  connectMongo();
+  res.send("Welcome");
 });
 
 app.get("/get-files", async (req, res) => {
+  if (!db) {
+    connectMongo();
+  }
   const filesCollection = db.collection("fs.files");
 
   try {
     // Retrieve all files from fs.files
     const allFiles = await filesCollection.find().toArray();
 
-    res.status(200).json(allFiles);
+    res.json(allFiles);
   } catch (error) {
     res.status(500).send("Internal Server Error");
   }
 });
 
 app.get("/get-file/:fileId", async (req, res) => {
+  if (!db) {
+    connectMongo();
+  }
   try {
     const fileId = req.params.fileId;
 
@@ -70,21 +85,11 @@ app.get("/get-file/:fileId", async (req, res) => {
       return res.status(404).json({ error: "File does not exist." });
     }
 
+    const contentType =
+      mime.lookup(fileMetadata[0].contentType) || "application/octet-stream";
+    res.setHeader("Content-Type", contentType);
+
     bucket.openDownloadStream(ObjectId(fileId)).pipe(res);
-    res.status(200).json({ message: "Get files successfully" });
-  } catch (error) {
-    res.status(500).send("Internal Server Error");
-  }
-});
-
-app.get("/get-projects", async (req, res) => {
-  const projectsCollection = db.collection("Projects");
-
-  try {
-    // Retrieve all files from fs.files
-    const allProject = await projectsCollection.find().toArray();
-
-    res.status(200).json(allProject);
   } catch (error) {
     res.status(500).send("Internal Server Error");
   }
@@ -97,6 +102,9 @@ app.post(
   "/upload-files/:projectId",
   upload.single("file"),
   async (req, res) => {
+    if (!db) {
+      connectMongo();
+    }
     const title = req.file.originalname;
     const type = path.extname(title).substr(1);
     const lastModified = Date.now();
@@ -125,7 +133,7 @@ app.post(
       uploadStream.on("finish", async () => {
         // Remove the file from the local filesystem
         // (assuming that you don't need it after uploading to GridFS)
-        res.status(201).json({ message: "Upload file successfully" });
+        res.status(201);
       });
     } catch (error) {
       res.json({ status: "Internal Server Error" });
@@ -133,10 +141,29 @@ app.post(
   }
 );
 
+app.get("/get-projects", async (req, res) => {
+  if (!db) {
+    connectMongo();
+  }
+  const projectsCollection = db.collection("Projects");
+
+  try {
+    // Retrieve all files from fs.files
+    const allProject = await projectsCollection.find().toArray();
+
+    res.status(200).json(allProject);
+  } catch (error) {
+    res.status(500).send("Internal Server Error");
+  }
+});
+
 /* The code you provided is a route handler for deleting a file from the server. It listens for DELETE
 requests to the '/delete-file/:fileId' endpoint, where ':fileId' is a parameter representing the ID
 of the file to be deleted. */
 app.delete("/delete-file/:fileId", async (req, res) => {
+  if (!db) {
+    connectMongo();
+  }
   try {
     const fileId = req.params.fileId;
 
@@ -158,6 +185,9 @@ app.delete("/delete-file/:fileId", async (req, res) => {
 });
 
 app.get("/members/getProjectMembers", async (req, res) => {
+  if (!db) {
+    connectMongo();
+  }
   const ProjectId = new ObjectId(req.query.projectId);
   try {
     const members = await Member.find({ "projects.ProjectId": ProjectId });
@@ -170,13 +200,16 @@ app.get("/members/getProjectMembers", async (req, res) => {
       }))
       .filter((m) => m.projects.length > 0);
 
-      res.status(200).json(filterMembers);
+    res.status(200).json(filterMembers);
   } catch (error) {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
 app.get("/members/search", async (req, res) => {
+  if (!db) {
+    connectMongo();
+  }
   try {
     const searchTerm = req.query.name;
     const projectId = req.query.projectId;
@@ -206,6 +239,9 @@ app.get("/members/search", async (req, res) => {
 });
 
 app.get("/get-members/:role", async (req, res) => {
+  if (!db) {
+    connectMongo();
+  }
   const roleFilter = req.params.role.replace(/[^a-zA-Z0-9]/g, "");
 
   try {
@@ -224,6 +260,9 @@ app.get("/get-members/:role", async (req, res) => {
 });
 
 app.post("/add-update-member", async (req, res) => {
+  if (!db) {
+    connectMongo();
+  }
   try {
     // Extract member details from the request body
     const { name, role, email, projects } = req.body;
@@ -283,6 +322,9 @@ app.post("/add-update-member", async (req, res) => {
 });
 
 app.post("/add-tasks", async (req, res) => {
+  if (!db) {
+    connectMongo();
+  }
   try {
     // Extract task details from the request body
     const {
@@ -323,6 +365,9 @@ app.post("/add-tasks", async (req, res) => {
 });
 
 app.get("/get-tasks/:projectId", async (req, res) => {
+  if (!db) {
+    connectMongo();
+  }
   try {
     const projectId = new ObjectId(req.params.projectId);
 
@@ -341,6 +386,9 @@ app.get("/get-tasks/:projectId", async (req, res) => {
 });
 
 app.put("/add-member-to-task/:taskId", async (req, res) => {
+  if (!db) {
+    connectMongo();
+  }
   const taskId = req.params.taskId;
   const { memberId } = req.body;
 
@@ -366,6 +414,9 @@ app.put("/add-member-to-task/:taskId", async (req, res) => {
 });
 
 app.put("/add-tags/:taskId", async (req, res) => {
+  if (!db) {
+    connectMongo();
+  }
   try {
     const { tags } = req.body;
     const taskId = req.params.taskId;
@@ -383,6 +434,9 @@ app.put("/add-tags/:taskId", async (req, res) => {
 });
 
 app.put("/remove-tags/:taskId", async (req, res) => {
+  if (!db) {
+    connectMongo();
+  }
   try {
     const { tags } = req.body;
     const taskId = req.params.taskId;
@@ -400,6 +454,9 @@ app.put("/remove-tags/:taskId", async (req, res) => {
 });
 
 app.put("/remove-member-from-task/:taskId", async (req, res) => {
+  if (!db) {
+    connectMongo();
+  }
   try {
     const { memberId } = req.body;
     const taskId = req.params.taskId;
@@ -424,6 +481,9 @@ app.put("/remove-member-from-task/:taskId", async (req, res) => {
 });
 
 app.put("/update-task-status/:taskId", async (req, res) => {
+  if (!db) {
+    connectMongo();
+  }
   try {
     const { status } = req.body;
     const taskId = req.params.taskId;
@@ -453,6 +513,9 @@ app.put("/update-task-status/:taskId", async (req, res) => {
 });
 
 app.post("/update-payment", async (req, res) => {
+  if (!db) {
+    connectMongo();
+  }
   try {
     const { projectId, usage, note, budget, change, notification } = req.body;
 
@@ -504,6 +567,9 @@ app.post("/update-payment", async (req, res) => {
 });
 
 app.get("/get-payments/:projectId", async (req, res) => {
+  if (!db) {
+    connectMongo();
+  }
   try {
     const projectId = req.params.projectId;
 
@@ -520,5 +586,9 @@ app.get("/get-payments/:projectId", async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
+
+// app.listen(5000, () => {
+//   console.log("Server Started");
+// });
 
 module.exports = app;
