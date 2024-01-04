@@ -28,7 +28,7 @@ let db;
 const mongoUrl =
   "mongodb+srv://admin:admin@cluster0.5wtjno2.mongodb.net/a?retryWrites=true&w=majority";
 
-//Check if connection establish
+// Check if connection establish
 // mongoose.connection.once("open", () => {
 //   db = mongoose.connection.db;
 // });
@@ -47,17 +47,31 @@ connectMongo = () => {
       console.error("MongoDB connection error:", error);
       res.status(500).send("Internal Server Error");
     });
+  mongoose.connection.once("open", () => {
+    db = mongoose.connection.db;
+  });
 };
 
 app.get("/", (req, res) => {
-  connectMongo();
-  res.send("Welcome");
+  mongoose
+    .connect(mongoUrl, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    })
+    .then(() => {
+      db = mongoose.connection.db;
+      res.status(200).send("Connected to database");
+    })
+    .catch((e) => {
+      console.error("MongoDB connection error:", error);
+      res.status(500).send("Internal Server Error");
+    });
+  mongoose.connection.once("open", () => {
+    db = mongoose.connection.db;
+  });
 });
 
 app.get("/get-files", async (req, res) => {
-  if (!db) {
-    connectMongo();
-  }
   const filesCollection = db.collection("fs.files");
 
   try {
@@ -71,9 +85,6 @@ app.get("/get-files", async (req, res) => {
 });
 
 app.get("/get-file/:fileId", async (req, res) => {
-  if (!db) {
-    connectMongo();
-  }
   try {
     const fileId = req.params.fileId;
 
@@ -102,9 +113,6 @@ app.post(
   "/upload-files/:projectId",
   upload.single("file"),
   async (req, res) => {
-    if (!db) {
-      connectMongo();
-    }
     const title = req.file.originalname;
     const type = path.extname(title).substr(1);
     const lastModified = Date.now();
@@ -142,9 +150,6 @@ app.post(
 );
 
 app.get("/get-projects", async (req, res) => {
-  if (!db) {
-    connectMongo();
-  }
   const projectsCollection = db.collection("Projects");
 
   try {
@@ -161,9 +166,6 @@ app.get("/get-projects", async (req, res) => {
 requests to the '/delete-file/:fileId' endpoint, where ':fileId' is a parameter representing the ID
 of the file to be deleted. */
 app.delete("/delete-file/:fileId", async (req, res) => {
-  if (!db) {
-    connectMongo();
-  }
   try {
     const fileId = req.params.fileId;
 
@@ -185,9 +187,6 @@ app.delete("/delete-file/:fileId", async (req, res) => {
 });
 
 app.get("/members/getProjectMembers", async (req, res) => {
-  if (!db) {
-    connectMongo();
-  }
   const ProjectId = new ObjectId(req.query.projectId);
   try {
     const members = await Member.find({ "projects.ProjectId": ProjectId });
@@ -207,9 +206,6 @@ app.get("/members/getProjectMembers", async (req, res) => {
 });
 
 app.get("/members/search", async (req, res) => {
-  if (!db) {
-    connectMongo();
-  }
   try {
     const searchTerm = req.query.name;
     const projectId = req.query.projectId;
@@ -239,9 +235,6 @@ app.get("/members/search", async (req, res) => {
 });
 
 app.get("/get-members/:role", async (req, res) => {
-  if (!db) {
-    connectMongo();
-  }
   const roleFilter = req.params.role.replace(/[^a-zA-Z0-9]/g, "");
 
   try {
@@ -260,9 +253,6 @@ app.get("/get-members/:role", async (req, res) => {
 });
 
 app.post("/add-update-member", async (req, res) => {
-  if (!db) {
-    connectMongo();
-  }
   try {
     // Extract member details from the request body
     const { name, role, email, projects } = req.body;
@@ -322,9 +312,6 @@ app.post("/add-update-member", async (req, res) => {
 });
 
 app.post("/add-tasks", async (req, res) => {
-  if (!db) {
-    connectMongo();
-  }
   try {
     // Extract task details from the request body
     const {
@@ -374,9 +361,6 @@ app.post("/add-tasks", async (req, res) => {
 });
 
 app.get("/get-tasks/:projectId", async (req, res) => {
-  if (!db) {
-    connectMongo();
-  }
   try {
     const projectId = new ObjectId(req.params.projectId);
 
@@ -395,9 +379,6 @@ app.get("/get-tasks/:projectId", async (req, res) => {
 });
 
 app.put("/add-member-to-task/:taskId", async (req, res) => {
-  if (!db) {
-    connectMongo();
-  }
   const taskId = req.params.taskId;
   const { memberId } = req.body;
 
@@ -423,9 +404,6 @@ app.put("/add-member-to-task/:taskId", async (req, res) => {
 });
 
 app.put("/add-tags/:taskId", async (req, res) => {
-  if (!db) {
-    connectMongo();
-  }
   try {
     const { tags } = req.body;
     const taskId = req.params.taskId;
@@ -443,9 +421,6 @@ app.put("/add-tags/:taskId", async (req, res) => {
 });
 
 app.put("/remove-tags/:taskId", async (req, res) => {
-  if (!db) {
-    connectMongo();
-  }
   try {
     const { tags } = req.body;
     const taskId = req.params.taskId;
@@ -463,9 +438,6 @@ app.put("/remove-tags/:taskId", async (req, res) => {
 });
 
 app.put("/remove-member-from-task/:taskId", async (req, res) => {
-  if (!db) {
-    connectMongo();
-  }
   try {
     const { memberId } = req.body;
     const taskId = req.params.taskId;
@@ -490,9 +462,6 @@ app.put("/remove-member-from-task/:taskId", async (req, res) => {
 });
 
 app.put("/update-task-status/:taskId", async (req, res) => {
-  if (!db) {
-    connectMongo();
-  }
   try {
     const { status } = req.body;
     const taskId = req.params.taskId;
@@ -548,9 +517,6 @@ app.get("/get-timelines/:projectId", async (req, res) => {
 // });
 
 app.post("/update-payment", async (req, res) => {
-  if (!db) {
-    connectMongo();
-  }
   try {
     const { projectId, usage, note, budget, change, notification } = req.body;
 
@@ -600,9 +566,6 @@ app.post("/update-payment", async (req, res) => {
 });
 
 app.get("/get-payments/:projectId", async (req, res) => {
-  if (!db) {
-    connectMongo();
-  }
   try {
     const projectId = req.params.projectId;
 

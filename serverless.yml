@@ -1,0 +1,56 @@
+service: express-app
+
+provider:
+ name: aws
+ runtime: nodejs14.x
+stage: dev
+ region: us-east-1
+ memorySize: 512
+ timeout: 10
+
+functions:
+ app:
+    handler: lambda.handler
+    events:
+      - http:
+          path: /{proxy+}
+          method: any
+      - http:
+          path: '/*'
+          method: any
+
+plugins:
+ - serverless-webpack
+ - serverless-offline
+
+# custom:
+#  serverless-offline:
+#     httpsProtocol: 'http'
+#     host: 'localhost'
+#     port: 3000
+
+resources:
+ Resources:
+    HelloWorldExecutionRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                 - lambda.amazonaws.com
+              Action:
+                - sts:AssumeRole
+        Policies:
+          - PolicyName: root
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                 Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                 Resource: '*'
