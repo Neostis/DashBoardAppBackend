@@ -397,12 +397,22 @@ app.post("/add-update-member", async (req, res) => {
 app.post("/add-tasks", async (req, res) => {
   try {
     // Extract task details from the request body
-    const { title, date, details, projectId, status, tags, members } = req.body;
+    const {
+      title,
+      startDate,
+      endDate,
+      details,
+      projectId,
+      status,
+      tags,
+      members,
+    } = req.body;
 
     // Create a new task instance
     const newTask = new Task({
       title: title,
-      date: date,
+      startDate: startDate,
+      endDate: endDate,
       details: details,
       projectId: projectId,
       status: status,
@@ -534,13 +544,13 @@ app.put("/remove-member-from-task/:taskId", async (req, res) => {
   }
 });
 
-app.put('/update-task-status/:taskId', async (req, res) => {
+app.put("/update-task-status/:taskId", async (req, res) => {
   try {
     const { status } = req.body;
     const taskId = req.params.taskId;
 
     if (!mongoose.Types.ObjectId.isValid(taskId)) {
-      return res.status(400).json({ message: 'Invalid task ID' });
+      return res.status(400).json({ message: "Invalid task ID" });
     }
 
     const updatedTask = await Task.findByIdAndUpdate(
@@ -550,13 +560,16 @@ app.put('/update-task-status/:taskId', async (req, res) => {
     );
 
     if (!updatedTask) {
-      return res.status(404).json({ message: 'Task not found' });
+      return res.status(404).json({ message: "Task not found" });
     }
 
-    res.json({ message: 'Task status updated successfully', task: updatedTask });
+    res.json({
+      message: "Task status updated successfully",
+      task: updatedTask,
+    });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
@@ -565,7 +578,9 @@ app.post("/update-payment", async (req, res) => {
     const { projectId, usage, note, budget, change, notification } = req.body;
 
     // Check if the project already has a payment
-    const existingPayment = await Payment.findOne({ projectId: ObjectId(projectId) });
+    const existingPayment = await Payment.findOne({
+      projectId: ObjectId(projectId),
+    });
 
     if (existingPayment) {
       // If a payment exists, update it
