@@ -18,6 +18,8 @@ const app = express();
 app.use(cors());
 
 const bodyParser = require("body-parser");
+const Project = require("./projectModel");
+const Timeline = require("./timelineModel");
 app.use(express.json());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -28,48 +30,48 @@ let db;
 const mongoUrl =
   "mongodb+srv://admin:admin@cluster0.5wtjno2.mongodb.net/a?retryWrites=true&w=majority";
 
-  mongoose
-    .connect(mongoUrl, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    })
-    .then(() => {
-      db = mongoose.connection.db;
-      // res.status(200).send("Connected to database");
-    })
-    .catch((e) => {
-      console.error("MongoDB connection error:", e);
-      // res.status(500).send("Internal Server Error");
-    });
-  mongoose.connection.once("open", () => {
+mongoose
+  .connect(mongoUrl, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
     db = mongoose.connection.db;
+    // res.status(200).send("Connected to database");
+  })
+  .catch((e) => {
+    console.error("MongoDB connection error:", e);
+    // res.status(500).send("Internal Server Error");
   });
+mongoose.connection.once("open", () => {
+  db = mongoose.connection.db;
+});
 // Check if connection establish
- mongoose.connection.once("open", () => {
-   db = mongoose.connection.db;
- });
+mongoose.connection.once("open", () => {
+  db = mongoose.connection.db;
+});
 
-connectMongo = () => {
-  mongoose
-    .connect(mongoUrl, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    })
-    .then(() => {
-      db = mongoose.connection.db;
-      res.status(200).send("Connected to database");
-    })
-    .catch((e) => {
-      console.error("MongoDB connection error:", error);
-      res.status(500).send("Internal Server Error");
-    });
-  mongoose.connection.once("open", () => {
-    db = mongoose.connection.db;
-  });
-};
+// connectMongo = () => {
+//   mongoose
+//     .connect(mongoUrl, {
+//       useNewUrlParser: true,
+//       useUnifiedTopology: true,
+//     })
+//     .then(() => {
+//       db = mongoose.connection.db;
+//       res.status(200).send("Connected to database");
+//     })
+//     .catch((e) => {
+//       console.error("MongoDB connection error:", error);
+//       res.status(500).send("Internal Server Error");
+//     });
+//   mongoose.connection.once("open", () => {
+//     db = mongoose.connection.db;
+//   });
+// };
 
 app.get("/", (req, res) => {
- /* mongoose
+  /* mongoose
     .connect(mongoUrl, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -85,7 +87,7 @@ app.get("/", (req, res) => {
   mongoose.connection.once("open", () => {
     db = mongoose.connection.db;
   });*/
-        res.send("welcome");
+  res.send("welcome");
 });
 
 app.get("/get-files", async (req, res) => {
@@ -174,6 +176,21 @@ app.get("/get-projects", async (req, res) => {
     const allProject = await projectsCollection.find().toArray();
 
     res.status(200).json(allProject);
+  } catch (error) {
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+app.post("/add-project/:title", async (req, res) => {
+  try {
+    const title = req.params.title;
+
+    const newProject = new Project({
+      title: title,
+    });
+
+    const savedProject = await newProject.save();
+    res.status(201).json(savedProject);
   } catch (error) {
     res.status(500).send("Internal Server Error");
   }
@@ -600,8 +617,8 @@ app.get("/get-payments/:projectId", async (req, res) => {
   }
 });
 
- app.listen(5000, () => {
-   console.log("Server Started");
- });
+app.listen(5000, () => {
+  console.log("Server Started");
+});
 
 module.exports = app;
