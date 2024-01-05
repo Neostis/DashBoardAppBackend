@@ -12,6 +12,7 @@ const upload = multer({ storage: storage });
 const Member = require("./memberModel");
 const Task = require("./taskModel");
 const Payment = require("./paymentModel");
+const Timeline = require("./timelineModel");
 const memberModel = require("./memberModel");
 
 const app = express();
