@@ -12,6 +12,7 @@ const upload = multer({ storage: storage });
 const Member = require("./memberModel");
 const Task = require("./taskModel");
 const Payment = require("./paymentModel");
+const Timeline = require("./timelineModel");
 const memberModel = require("./memberModel");
 
 const app = express();
@@ -28,26 +29,26 @@ let db;
 const mongoUrl =
   "mongodb+srv://admin:admin@cluster0.5wtjno2.mongodb.net/a?retryWrites=true&w=majority";
 
-  mongoose
-    .connect(mongoUrl, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    })
-    .then(() => {
-      db = mongoose.connection.db;
-      // res.status(200).send("Connected to database");
-    })
-    .catch((e) => {
-      console.error("MongoDB connection error:", e);
-      // res.status(500).send("Internal Server Error");
-    });
-  mongoose.connection.once("open", () => {
+mongoose
+  .connect(mongoUrl, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
     db = mongoose.connection.db;
+    // res.status(200).send("Connected to database");
+  })
+  .catch((e) => {
+    console.error("MongoDB connection error:", e);
+    // res.status(500).send("Internal Server Error");
   });
+mongoose.connection.once("open", () => {
+  db = mongoose.connection.db;
+});
 // Check if connection establish
- mongoose.connection.once("open", () => {
-   db = mongoose.connection.db;
- });
+mongoose.connection.once("open", () => {
+  db = mongoose.connection.db;
+});
 
 connectMongo = () => {
   mongoose
@@ -69,7 +70,7 @@ connectMongo = () => {
 };
 
 app.get("/", (req, res) => {
- /* mongoose
+  /* mongoose
     .connect(mongoUrl, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -85,7 +86,7 @@ app.get("/", (req, res) => {
   mongoose.connection.once("open", () => {
     db = mongoose.connection.db;
   });*/
-        res.send("welcome");
+  res.send("welcome");
 });
 
 app.get("/get-files", async (req, res) => {
@@ -600,8 +601,8 @@ app.get("/get-payments/:projectId", async (req, res) => {
   }
 });
 
- app.listen(5000, () => {
-   console.log("Server Started");
- });
+app.listen(5000, () => {
+  console.log("Server Started");
+});
 
 module.exports = app;
