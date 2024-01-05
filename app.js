@@ -71,7 +71,7 @@ mongoose.connection.once("open", () => {
 // };
 
 app.get("/", (req, res) => {
-  /* mongoose
+  mongoose
     .connect(mongoUrl, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -86,7 +86,7 @@ app.get("/", (req, res) => {
     });
   mongoose.connection.once("open", () => {
     db = mongoose.connection.db;
-  });*/
+  });
   res.send("welcome");
 });
 
@@ -616,8 +616,8 @@ app.get("/get-payments/:projectId", async (req, res) => {
   }
 });
 
-app.listen(5000, () => {
-  console.log("Server Started");
-});
+// app.listen(5000, () => {
+//   console.log("Server Started");
+// });
 
 module.exports = app;
