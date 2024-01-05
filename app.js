@@ -35,11 +35,11 @@ const mongoUrl =
     })
     .then(() => {
       db = mongoose.connection.db;
-      res.status(200).send("Connected to database");
+      // res.status(200).send("Connected to database");
     })
     .catch((e) => {
-      console.error("MongoDB connection error:", error);
-      res.status(500).send("Internal Server Error");
+      console.error("MongoDB connection error:", e);
+      // res.status(500).send("Internal Server Error");
     });
   mongoose.connection.once("open", () => {
     db = mongoose.connection.db;
