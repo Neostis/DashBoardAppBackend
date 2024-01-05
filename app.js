@@ -13,7 +13,6 @@ const Member = require("./memberModel");
 const Task = require("./taskModel");
 const Payment = require("./paymentModel");
 const Timeline = require("./timelineModel");
-const memberModel = require("./memberModel");
 
 const app = express();
 app.use(cors());
@@ -590,7 +589,6 @@ app.post("/update-payment", async (req, res) => {
       });
 
       const savedPayment = await newPayment.save();
-
       res.status(201).json({
         message: "Payment created successfully",
       });
