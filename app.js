@@ -3,6 +3,7 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const path = require("path");
 const mime = require("mime-types");
+const bcrypt = require("bcrypt");
 
 const { ObjectId } = require("mongodb");
 const multer = require("multer");
@@ -13,6 +14,7 @@ const Member = require("./memberModel");
 const Task = require("./taskModel");
 const Payment = require("./paymentModel");
 const Timeline = require("./timelineModel");
+const Account = require("./accountModel");
 
 const app = express();
 app.use(cors());
@@ -612,6 +614,149 @@ app.get("/get-payments/:projectId", async (req, res) => {
 
     res.status(200).json({ payments });
   } catch (error) {
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+app.post("/add-account", async (req, res) => {
+  try {
+    // Extract account details from the request body
+    const { name, role, email, phone, username, password, projects } = req.body;
+
+    // Create an array to store the updated projects
+    const updatedProjects = projects.map((project) => ({
+      projectId: new ObjectId(project.projectId),
+      type: project.type,
+    }));
+
+    // Check if an account with the given email already exists
+    const existingAccount = await Account.findOne({ email: email });
+
+    if (existingAccount) {
+      // If an account with the given email exists, update the projects array
+      updatedProjects.forEach((updatedProject) => {
+        const projectIndex = existingAccount.projects.findIndex((project) =>
+          project.projectId.equals(updatedProject.projectId)
+        );
+
+        if (projectIndex !== -1) {
+          // Update the existing project
+          existingAccount.projects[projectIndex].type = updatedProject.type;
+        } else {
+          // Add the new project
+          existingAccount.projects.push(updatedProject);
+        }
+      });
+
+      existingAccount.updateDate = new Date(); // Update the updateDate field
+      await existingAccount.save();
+      res.status(201).json({
+        message: "Account updated successfully",
+        account: existingAccount,
+      });
+    } else {
+      // If an account with the given email does not exist, create a new account
+      const newAccount = new Account({
+        createDate: new Date(),
+        updateDate: new Date(),
+        name: name,
+        role: role,
+        email: email,
+        phone: phone,
+        username: username,
+        password: password,
+        projects: updatedProjects,
+      });
+
+      // Save the new account to the database
+      const savedAccount = await newAccount.save();
+
+      // Send a success response
+      res
+        .status(201)
+        .json({ message: "Account added successfully", account: savedAccount });
+    }
+  } catch (error) {
+    // Handle any errors
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+app.post("/register", async (req, res) => {
+  try {
+    const { name, email, username, password } = req.body;
+
+    // Check if the email or username is already registered
+    const existingAccount = await Account.findOne({
+      $or: [{ email: email }, { username: username }],
+    });
+    if (existingAccount) {
+      return res
+        .status(400)
+        .json({ message: "Email or username is already registered" });
+    }
+
+    //Test
+    // const newAccount = new Account({
+    //   createDate: Math.floor(new Date().getTime() / 1000),
+    //   updateDate: Math.floor(new Date().getTime() / 1000),
+    //   name: "test",
+    //   role: "dev",
+    //   email: "test@gmail.com",
+    //   phone: "0899999999",
+    //   username: "user",
+    //   password: "pass",
+    //   projects: {
+    //     projectId: ObjectId("657aa5e1770d840a02e05056"),
+    //     type: "test",
+    //   },
+    // });
+    // newAccount.password = await bcrypt.hash(newAccount.password, 10);
+
+    // Hash the password before saving to the database
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create a new account instance
+    const newAccount = new Account({
+      createDate: new Date(),
+      updateDate: new Date(),
+      name: name,
+      email: email,
+      username: username,
+      password: hashedPassword,
+      projects: [],
+    });
+
+    // Save the new account to the database
+    const savedAccount = await newAccount.save();
+
+    res
+      .status(201)
+      .json({ message: "Account created successfully", account: savedAccount });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+app.get("/login", async (req, res) => {
+  try {
+    const { emailOrUsername, password } = req.body;
+
+    // Find the account by email or username
+    const account = await Account.findOne({
+      $or: [{ email: emailOrUsername }, { username: emailOrUsername }],
+    });
+
+    // Check if the account exists and verify the password
+    if (account && bcrypt.compare(password, account.password)) {
+      res.status(200).json({ message: "Login successful", account: account });
+    } else {
+      res.status(401).json({ message: "Invalid credentials" });
+    }
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
