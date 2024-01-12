@@ -10,17 +10,17 @@ const multer = require("multer");
 const storage = multer.memoryStorage(); // Use memory storage for multer
 const upload = multer({ storage: storage });
 
-const Member = require("./memberModel");
-const Task = require("./taskModel");
-const Payment = require("./paymentModel");
-const Timeline = require("./timelineModel");
-const Account = require("./accountModel");
+const Member = require("./Models/memberModel");
+const Task = require("./Models/taskModel");
+const Payment = require("./Models/paymentModel");
+const Timeline = require("./Models/timelineModel");
+const Account = require("./Models/accountModel");
 
 const app = express();
 app.use(cors());
 
 const bodyParser = require("body-parser");
-const Project = require("./projectModel");
+const Project = require("./Models/projectModel");
 
 app.use(express.json());
 app.use(bodyParser.json());
