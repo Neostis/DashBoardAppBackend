@@ -685,7 +685,8 @@ app.post("/add-account", async (req, res) => {
 
 app.post("/register", async (req, res) => {
   try {
-    const { name, email, username, password } = req.body;
+    const { name, email, username, password, createDate, updateDate } =
+      req.body;
 
     // Check if the email or username is already registered
     const existingAccount = await Account.findOne({
@@ -719,8 +720,8 @@ app.post("/register", async (req, res) => {
 
     // Create a new account instance
     const newAccount = new Account({
-      createDate: new Date(),
-      updateDate: new Date(),
+      createDate: createDate,
+      updateDate: updateDate,
       name: name,
       email: email,
       username: username,
@@ -740,13 +741,13 @@ app.post("/register", async (req, res) => {
   }
 });
 
-app.get("/login", async (req, res) => {
+app.post("/login", async (req, res) => {
   try {
-    const { emailOrUsername, password } = req.body;
+    const { username, password } = req.body;
 
     // Find the account by email or username
     const account = await Account.findOne({
-      $or: [{ email: emailOrUsername }, { username: emailOrUsername }],
+      $or: [{ email: username }, { username: username }],
     });
 
     // Check if the account exists and verify the password
