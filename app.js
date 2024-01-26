@@ -4,6 +4,8 @@ const mongoose = require("mongoose");
 const path = require("path");
 const mime = require("mime-types");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 
 const { ObjectId } = require("mongodb");
 const multer = require("multer");
@@ -91,6 +93,12 @@ app.get("/", (req, res) => {
   });*/
   res.send("welcome");
 });
+
+const generateSecretKey = () => {
+  return crypto.randomBytes(32).toString("hex"); // 32 bytes for a 256-bit key
+};
+
+const secretKey = generateSecretKey();
 
 app.get("/get-files", async (req, res) => {
   const filesCollection = db.collection("fs.files");
@@ -752,7 +760,18 @@ app.post("/login", async (req, res) => {
 
     // Check if the account exists and verify the password
     if (account && bcrypt.compare(password, account.password)) {
-      res.status(200).json({ message: "Login successful", account: account });
+      const token = jwt.sign(
+        {
+          id: account._id,
+          role: account.createDate,
+          username: account.username,
+        },
+        secretKey,
+        {
+          expiresIn: "30m",
+        }
+      );
+      res.status(200).json({ message: "Login successful", token });
     } else {
       res.status(401).json({ message: "Invalid credentials" });
     }
