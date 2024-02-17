@@ -29,6 +29,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use("/files", express.static("files"));
 
+const tokenBlacklist = new Set();
 let db;
 // MongoDB connection
 const mongoUrl =
@@ -780,6 +781,22 @@ app.post("/login", async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
+
+// app.post("/revoke-token", async (req, res) => {
+//   try {
+//     const { token } = req.body;
+
+//     if (token) {
+//       tokenBlacklist.add(token);
+//       return res.json({ message: "Token revoked successfully" });
+//     } else {
+//       return res.status(400).json({ message: "Token not provided" });
+//     }
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Internal Server Error" });
+//   }
+// });
 
 app.listen(5000, () => {
   console.log("Server Started");
